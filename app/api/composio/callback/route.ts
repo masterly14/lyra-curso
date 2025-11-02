@@ -10,20 +10,24 @@ export async function POST(request: NextRequest) {
 
   const connectedAccount = await composio.connectedAccounts.waitForConnection(connectionRequestId);
 
+  const provider = (connectedAccount as any).toolkitKey ?? connectedAccount.toolkit?.slug ?? 'unknown';
+
+  const ca = connectedAccount as any;
+
   await prisma.calendarAccount.upsert({
     where: { userId },
     create: {
       userId,
-      provider: connectedAccount.toolkitKey,
-      accessToken: connectedAccount.accessToken ?? '',
-      refreshToken: connectedAccount.refreshToken ?? '',
-      expiresAt: new Date(Date.now() + (connectedAccount.expiresIn ?? 0) * 1000),
+      provider,
+      accessToken: ca.accessToken ?? '',
+      refreshToken: ca.refreshToken ?? '',
+      expiresAt: new Date(Date.now() + (ca.expiresIn ?? 0) * 1000),
     },
     update: {
-      provider: connectedAccount.toolkitKey,
-      accessToken: connectedAccount.accessToken ?? '',
-      refreshToken: connectedAccount.refreshToken ?? '',
-      expiresAt: new Date(Date.now() + (connectedAccount.expiresIn ?? 0) * 1000),
+      provider,
+      accessToken: ca.accessToken ?? '',
+      refreshToken: ca.refreshToken ?? '',
+      expiresAt: new Date(Date.now() + (ca.expiresIn ?? 0) * 1000),
     },
   });
 

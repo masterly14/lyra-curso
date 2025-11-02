@@ -20,21 +20,22 @@ export async function GET(req: NextRequest) {
   const localUser = await prisma.user.findUnique({ where: { clerkId: authUser.id } });
   if (!localUser) return redirect('/platform/dashboard');
 
-  const provider = (ca as any).toolkitKey ?? ca.toolkit?.slug ?? 'unknown';
+  const anyCA = ca as any;
+  const provider = anyCA.toolkitKey ?? ca.toolkit?.slug ?? 'unknown';
   await prisma.calendarAccount.upsert({
     where: { userId: localUser.id },
     create: {
       userId: localUser.id,
       provider,
-      accessToken: ca.accessToken ?? '',
-      refreshToken: ca.refreshToken ?? '',
-      expiresAt: new Date(Date.now() + ((ca.expiresIn ?? 60) * 1000)),
+      accessToken: anyCA.accessToken ?? '',
+      refreshToken: anyCA.refreshToken ?? '',
+      expiresAt: new Date(Date.now() + ((anyCA.expiresIn ?? 60) * 1000)),
     },
     update: {
       provider,
-      accessToken: ca.accessToken ?? '',
-      refreshToken: ca.refreshToken ?? '',
-      expiresAt: new Date(Date.now() + ((ca.expiresIn ?? 60) * 1000)),
+      accessToken: anyCA.accessToken ?? '',
+      refreshToken: anyCA.refreshToken ?? '',
+      expiresAt: new Date(Date.now() + ((anyCA.expiresIn ?? 60) * 1000)),
     },
   });
 
