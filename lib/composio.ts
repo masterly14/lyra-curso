@@ -13,6 +13,5 @@ export const anthropicClient = new Anthropic();
 
 export const composio = new Composio({
   apiKey,
-  provider: new AnthropicProvider({ anthropicClient }),
-  cacheTools: false,
+  provider: new AnthropicProvider({ cacheTools: false }),
 });
