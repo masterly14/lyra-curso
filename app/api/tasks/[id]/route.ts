@@ -3,12 +3,14 @@ import { currentUser } from "@clerk/nextjs/server";
 import { prisma } from "@/lib/db";
 import { cancelReminder, scheduleReminder } from "@/lib/qstash";
 
-export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const user = await currentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
   const { title, description, scheduledFor, status } = await request.json();
-  const task = await prisma.task.findUnique({ where: { id: params.id, userId: user.id } });
+  const task = await prisma.task.findUnique({ where: { id, userId: user.id } });
   if (!task) return new Response("Not found", { status: 404 });
 
   if (scheduledFor && task.qstashMessageId) {
@@ -39,11 +41,13 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
   return Response.json(updated);
 }
 
-export async function DELETE(_request: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
   const user = await currentUser();
   if (!user) return new Response("Unauthorized", { status: 401 });
 
-  const task = await prisma.task.findUnique({ where: { id: params.id, userId: user.id } });
+  const task = await prisma.task.findUnique({ where: { id, userId: user.id } });
   if (!task) return new Response("Not found", { status: 404 });
 
   if (task.qstashMessageId) {
