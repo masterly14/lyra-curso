@@ -1,0 +1,167 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String              @id @default(uuid())
+  email             String              @unique
+  clerkId           String              @unique
+  name              String
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  ConversationState ConversationState[]
+  Subscription      Subscription?
+  PhoneVerification PhoneVerification[]
+  WhatsAppAccount   WhatsAppAccount[]
+  Message           Message[]
+  Task              Task[]
+  CalendarAccount   CalendarAccount[]
+}
+
+model Plans {
+  id                 String         @id @default(uuid())
+  productId          Int
+  productName        String
+  variantId          Int            @unique
+  name               String
+  price              String
+  description        String
+  isUsageBased       Boolean        @default(false)
+  interval           String
+  intervalCount      Int
+  trialInterval      String
+  trialIntervalCount Int
+  sort               Int
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  Subscriptions      Subscription[]
+}
+
+model Subscription {
+  id                 String   @id @default(uuid())
+  lemonsqueezyId     String   @unique
+  orderId            String
+  name               String
+  email              String
+  status             String
+  statusFormatted    String
+  renewsAt           DateTime
+  endsAt             DateTime
+  trialEndsAt        DateTime
+  price              String
+  isUsageBased       Boolean  @default(false)
+  isPaused           Boolean  @default(false)
+  subscriptionItemId Json
+  userId             String   @unique
+  User               User     @relation(fields: [userId], references: [id])
+  planId             String
+  Plan               Plans    @relation(fields: [planId], references: [id])
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+model webhookEvents {
+  id              String   @id @default(uuid())
+  createdAt       DateTime @default(now())
+  eventName       String
+  processed       Boolean  @default(false)
+  body            Json
+  processingError String?
+}
+
+model PhoneVerification {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  phoneNumber String
+  otpCode     String
+  expiresAt   DateTime
+  verifiedAt  DateTime?
+  createdAt   DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model WhatsAppAccount {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id])
+  waId        String /// ID que devuelve la Cloud API
+  phoneNumber String
+  verifiedAt  DateTime
+  createdAt   DateTime @default(now())
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  direction String /// IN | OUT
+  type      String /// TEXT | AUDIO | IMAGE
+  content   String? /// Texto plano o transcripción
+  mediaUrl  String? /// Ruta S3 / URL media
+  processed Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+model Task {
+  id              String   @id @default(uuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id])
+  title           String
+  description     String?
+  scheduledFor    DateTime
+  status          String /// PENDING | SENT | COMPLETED | CANCELED
+  calendarEventId String? /// ID devuelto por Composio
+  qstashMessageId String? /// Para trackeo en Upstash
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([userId, scheduledFor])
+}
+
+model CalendarAccount {
+  id           String   @id @default(uuid())
+  userId       String   @unique
+  user         User     @relation(fields: [userId], references: [id])
+  provider     String /// google, outlook…
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+}
+
+model AssistantWebhookEvents {
+  id              String   @id @default(uuid())
+  source          String /// WHATSAPP | QSTASH | COMPOSIO
+  userId          String?
+  body            Json
+  processed       Boolean  @default(false)
+  processingError String?
+  createdAt       DateTime @default(now())
+
+  @@index([source, processed])
+}
+
+model ConversationState {
+  userId   String   @id
+  flow     String
+  step     String
+  data     Json
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id])
+}
